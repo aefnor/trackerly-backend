@@ -1,0 +1,11 @@
+fastapi
+uvicorn
+asyncpg
+sqlalchemy
+psycopg2-binary
+transformers
+torch
+pydantic
+h11
+haystack-ai
+transformers[torch,sentencepiece]

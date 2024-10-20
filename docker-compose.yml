@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:latest
+    container_name: foodtracker-db
+    environment:
+      POSTGRES_USER: fooduser
+      POSTGRES_PASSWORD: foodpass
+      POSTGRES_DB: foodtracker
+    ports:
+      - "5432:5432"
+  backend:
+    build: .
+    container_name: foodtracker-backend
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://fooduser:foodpass@db:5432/foodtracker
+    depends_on:
+      - db
