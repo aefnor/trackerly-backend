@@ -1,5 +1,7 @@
+import hashlib
 from fastapi import FastAPI, HTTPException, Depends
-from pydantic import BaseModel
+import jwt
+from pydantic import BaseModel, validator
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy import Column, String, Integer, Text, select, delete
@@ -8,6 +10,7 @@ from transformers import AutoTokenizer, AutoModelForQuestionAnswering
 from haystack import Document
 from haystack.components.readers import ExtractiveReader
 import torch
+from models import UserDB, FoodEntryDB
 
 # Use the DATABASE_URL from the environment (injected via Docker Compose)
 import os
@@ -49,6 +52,13 @@ class FoodEntryResponse(FoodEntry):
 class TextRequest(BaseModel):
     question: str
     context: str
+
+class User(BaseModel):
+    username: str
+    password_hash: str
+    email: str
+    first_name: str
+    last_name: str
 
 # FastAPI App
 app = FastAPI()
@@ -97,3 +107,30 @@ async def delete_food_entry(entry_id: int, db: AsyncSession = Depends(get_db)):
     if result.rowcount == 0:
         raise HTTPException(status_code=404, detail="Entry not found")
     await db.commit()
+
+class UserSignIn(BaseModel):
+    email: str
+    password: str
+
+# signin
+@app.post("/signin/")
+async def signin(user: UserSignIn, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(UserDB).where(UserDB.email == user.email))
+    # verify the password hash
+    if result.scalars().first().password_hash != hashlib.sha256(user.password.encode()).hexdigest():
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+    # issue a token
+    token = jwt.encode({"email": user.email}, "secret", algorithm="HS256")
+    return {"token": token}
+
+@app.post("/signup/")
+async def signup(user: User, db: AsyncSession = Depends(get_db)):
+    # take the password hash and hash it
+    user.password_hash = hashlib.sha256(user.password_hash.encode()).hexdigest()
+    user = UserDB(**user.dict())
+    db.add(user)
+    await db.commit()
+    await db.refresh(user)
+    return user
+
+

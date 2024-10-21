@@ -9,3 +9,5 @@ pydantic
 h11
 haystack-ai
 transformers[torch,sentencepiece]
+alembic
+pyjwt
