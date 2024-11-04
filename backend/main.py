@@ -9,8 +9,8 @@ from sqlalchemy.orm import declarative_base
 from transformers import AutoTokenizer, AutoModelForQuestionAnswering
 from haystack import Document
 from haystack.components.readers import ExtractiveReader
-import torch
 from models import UserDB, FoodEntryDB
+import json
 
 # Use the DATABASE_URL from the environment (injected via Docker Compose)
 import os
@@ -49,16 +49,54 @@ class FoodEntry(BaseModel):
 class FoodEntryResponse(FoodEntry):
     id: int
 
-class TextRequest(BaseModel):
-    question: str
-    context: str
-
 class User(BaseModel):
     username: str
     password_hash: str
     email: str
     first_name: str
     last_name: str
+
+# Define the nested models
+class FoodNutrientSource(BaseModel):
+    id: Optional[int] = None
+    code: Optional[str] = None
+    description: Optional[str] = None
+
+
+class FoodNutrientDerivation(BaseModel):
+    code: Optional[str] = None
+    description: Optional[str] = None
+    foodNutrientSource: Optional[FoodNutrientSource] = None
+
+
+class Nutrient(BaseModel):
+    id: int
+    number: str
+    name: str
+    rank: int
+    unitName: str
+
+
+class FoodNutrient(BaseModel):
+    type: Optional[str] = None
+    id: Optional[int] = None
+    nutrient: Optional[Nutrient] = None
+    dataPoints: Optional[int] = None # Make this field optional
+    foodNutrientDerivation: Optional[FoodNutrientDerivation] = None
+    median: Optional[float] = None     # Make this field optional
+    amount: Optional[float] = None
+    max: Optional[float] = None        # Make this field optional
+    min: Optional[float] = None         # Make this field optional
+
+
+class FoundationFood(BaseModel):
+    foodClass: str
+    description: str
+    foodNutrients: List[FoodNutrient]
+
+
+class FoodData(BaseModel):
+    FoundationFoods: List[FoundationFood]
 
 # FastAPI App
 app = FastAPI()
@@ -72,6 +110,79 @@ async def get_db() -> AsyncSession:
     async with SessionLocal() as session:
         yield session
 
+# Define the Request Model
+class TextRequest(BaseModel):
+    question: str
+
+# we need to index the foundationDownload.json data
+with open('foundationDownload.json') as f:
+    print("data found")
+    print(f)
+    data = json.load(f)
+documents = []  # list to hold the indexed documents
+# Function to print parsed data
+# def print_food_data(data):
+#     print(FoodData(**data))
+#     for food in data.get("FoundationFoods", []):
+#         # print(f"Food Class: {food.get('foodClass')}")
+#         documents.append(Document(content=str(food.get('foodClass')))) # adding the indexed document to documents list
+#         # print(f"Description: {food.get('description')}")
+        
+#         # for nutrient in food.get("foodNutrients", []):
+#             # nutrient_info = nutrient.get("nutrient", {})
+#             # print(f"  Nutrient Name: {nutrient_info.get('name')}")
+#             # print(f"  Nutrient ID: {nutrient_info.get('id')}")
+#             # print(f"  Amount: {nutrient.get('amount')} {nutrient_info.get('unitName')}")
+#             # print(f"  Median: {nutrient.get('median')} {nutrient_info.get('unitName')}")
+#             # print(f"  Data Points: {nutrient.get('dataPoints')}")
+#             # derivation = nutrient.get("foodNutrientDerivation", {})
+#             # print(f"    Source Code: {derivation.get('code')}")
+#             # print(f"    Source Description: {derivation.get('description')}")
+#             # food_source = derivation.get("foodNutrientSource", {})
+#             # print(f"      Source ID: {food_source.get('id')}")
+#             # print(f"      Source Description: {food_source.get('description')}")
+#             # # add it to documents
+for foundation_food in FoodData(**data).FoundationFoods:
+    # Convert FoundationFood object to string content for indexing
+    food_class_content = foundation_food.foodClass
+    food_description_content = foundation_food.description
+    nutrients_content = ", ".join(
+        f"{nutrient.nutrient.name} ({nutrient.nutrient.unitName}): {nutrient.amount}" for nutrient in foundation_food.foodNutrients if nutrient.amount is not None
+    )
+    
+    # Create a content string that includes the foodClass, description, and nutrient details
+    content = f"Class: {food_class_content}, Description: {food_description_content}, Nutrients: {nutrients_content}"
+    
+    # Append as Document to documents list
+    documents.append(Document(content=content))
+
+# Call the function to print the data
+# print_food_data(data)
+# for i, record in enumerate(data): # directly iterate over records and create index from 0 automatically
+#     if not isinstance(record, dict): # if a record isn't dictionary then skip it
+#         print(f"Skipping invalid data at position {i}: {record}")
+#         continue
+#     flat_dict = {} # create a flat dictionary for each record
+#     for key, value in record.items():
+#         # process 'foodClass' and 'description' directly without prefixing them with 'food_' 
+#         if key in ('foodClass', 'description'):
+#             flat_dict[key] = str(value)  
+#             continue
+#         elif isinstance(value, dict): # if value is a dictionary then add its content to our flat dictionary  
+#             for subkey, subvalue in value.items():
+#                 # adding prefix 'food_' for clarity 
+#                 flat_dict['food_'+subkey] = str(subvalue)
+#         elif isinstance(value, list): # for handling the nested foodNutrients
+#             for j, nutrient in enumerate(value): # iterate over each foodNutrient and create a new key-value pair for it
+#                 if not isinstance(nutrient, dict): continue  # if a nutrient isn't dictionary then skip it
+#                 for subkey, subvalue in nutrient.items():
+#                     flat_dict['foodNutrients'+str(j)+'_'+subkey] = str(subvalue) # adding prefix for clarity and suffix with index of the nutrient
+#         else:
+#             flat_dict[key] = value  # add other key-values to our flat dictionary without converting it into a string
+#     document = Document(content=str(flat_dict), id=i) # create a document with the flat dictionary and assign index as its id
+#     documents.append(document) 
+
+print(len(documents))
 # Define an endpoint for inference
 @app.post("/predict/")
 async def predict(request: TextRequest):
@@ -84,7 +195,7 @@ async def predict(request: TextRequest):
     reader.warm_up()
 
     # question = "What is a popular programming language?"
-    result = reader.run(query=request.question, documents=docs)
+    result = reader.run(query=request.question, documents=documents)
     
     return {"result": result}
 
