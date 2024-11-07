@@ -39,3 +39,4 @@ posthog
 backoff
 monotonic
 jwt
+pandas

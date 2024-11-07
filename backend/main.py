@@ -51,7 +51,7 @@ class FoodEntryResponse(FoodEntry):
 
 class User(BaseModel):
     username: str
-    password_hash: str
+    password: str
     email: str
     first_name: str
     last_name: str
@@ -237,7 +237,7 @@ async def signin(user: UserSignIn, db: AsyncSession = Depends(get_db)):
 @app.post("/signup/")
 async def signup(user: User, db: AsyncSession = Depends(get_db)):
     # take the password hash and hash it
-    user.password_hash = hashlib.sha256(user.password_hash.encode()).hexdigest()
+    user.password_hash = hashlib.sha256(user.password.encode()).hexdigest()
     user = UserDB(**user.dict())
     db.add(user)
     await db.commit()
