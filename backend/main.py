@@ -1,7 +1,7 @@
 import hashlib
 from fastapi import FastAPI, HTTPException, Depends
 import jwt
-from pydantic import BaseModel, validator
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy import Column, String, Integer, Text, select, delete
@@ -9,13 +9,16 @@ from sqlalchemy.orm import declarative_base
 from transformers import AutoTokenizer, AutoModelForQuestionAnswering
 from haystack import Document
 from haystack.components.readers import ExtractiveReader
-from models import UserDB, FoodEntryDB
+from backend.models import UserDB, FoodEntryDB
 import json
 
 # Use the DATABASE_URL from the environment (injected via Docker Compose)
 import os
 DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    DATABASE_URL = "postgresql+asyncpg://fooduser:foodpass@localhost:5432/foodtracker"
 
+print(DATABASE_URL)
 # SQLAlchemy Setup
 engine = create_async_engine(DATABASE_URL, echo=True)
 SessionLocal = async_sessionmaker(bind=engine, expire_on_commit=False)
@@ -55,6 +58,14 @@ class User(BaseModel):
     email: str
     first_name: str
     last_name: str
+    password_hash: str = Field(default=None, exclude=True)
+
+    @property
+    def hashed_password(self):
+        return hashlib.sha256(self.password.encode()).hexdigest()
+
+    class Config:
+        orm_mode = True
 
 # Define the nested models
 class FoodNutrientSource(BaseModel):
@@ -236,12 +247,13 @@ async def signin(user: UserSignIn, db: AsyncSession = Depends(get_db)):
 
 @app.post("/signup/")
 async def signup(user: User, db: AsyncSession = Depends(get_db)):
-    # take the password hash and hash it
-    user.password_hash = hashlib.sha256(user.password.encode()).hexdigest()
-    user = UserDB(**user.dict())
-    db.add(user)
+    print(user)
+    user_data = user.dict(exclude={"password"})
+    user_data["password_hash"] = hashlib.sha256(user.password.encode()).hexdigest()
+    user_db = UserDB(**user_data)
+    db.add(user_db)
     await db.commit()
-    await db.refresh(user)
-    return user
+    await db.refresh(user_db)
+    return user_db
 
 

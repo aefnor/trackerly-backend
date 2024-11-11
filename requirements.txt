@@ -40,3 +40,9 @@ backoff
 monotonic
 jwt
 pandas
+cryptography
+sympy
+cffi
+mpmath
+greenlet
+mako
