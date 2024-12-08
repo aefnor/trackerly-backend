@@ -1,19 +1,20 @@
 import hashlib
 from fastapi import FastAPI, HTTPException, Depends
 import jwt
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field
 from typing import List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy import Column, String, Integer, Text, select, delete
 from sqlalchemy.orm import declarative_base
 from transformers import AutoTokenizer, AutoModelForQuestionAnswering
-from haystack import Document
-from haystack.components.readers import ExtractiveReader
 from backend.models import UserDB, FoodEntryDB
 import json
+import datetime
+from backend.food import analyze_food_query
 
 # Use the DATABASE_URL from the environment (injected via Docker Compose)
 import os
+
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
     DATABASE_URL = "postgresql+asyncpg://fooduser:foodpass@localhost:5432/foodtracker"
@@ -28,6 +29,7 @@ Base = declarative_base()
 tokenizer = AutoTokenizer.from_pretrained("deepset/tinyroberta-squad2")
 model = AutoModelForQuestionAnswering.from_pretrained("deepset/tinyroberta-squad2")
 
+
 # FoodEntry Model (Database Table)
 class FoodEntryDB(Base):
     __tablename__ = "food_entries"
@@ -40,6 +42,7 @@ class FoodEntryDB(Base):
     calories = Column(String, nullable=True)
     notes = Column(Text, nullable=True)
 
+
 # Pydantic Models
 class FoodEntry(BaseModel):
     food_name: str
@@ -49,8 +52,10 @@ class FoodEntry(BaseModel):
     calories: Optional[str] = None
     notes: Optional[str] = None
 
+
 class FoodEntryResponse(FoodEntry):
     id: int
+
 
 class User(BaseModel):
     username: str
@@ -66,6 +71,7 @@ class User(BaseModel):
 
     class Config:
         orm_mode = True
+
 
 # Define the nested models
 class FoodNutrientSource(BaseModel):
@@ -92,12 +98,12 @@ class FoodNutrient(BaseModel):
     type: Optional[str] = None
     id: Optional[int] = None
     nutrient: Optional[Nutrient] = None
-    dataPoints: Optional[int] = None # Make this field optional
+    dataPoints: Optional[int] = None  # Make this field optional
     foodNutrientDerivation: Optional[FoodNutrientDerivation] = None
-    median: Optional[float] = None     # Make this field optional
+    median: Optional[float] = None  # Make this field optional
     amount: Optional[float] = None
-    max: Optional[float] = None        # Make this field optional
-    min: Optional[float] = None         # Make this field optional
+    max: Optional[float] = None  # Make this field optional
+    min: Optional[float] = None  # Make this field optional
 
 
 class FoundationFood(BaseModel):
@@ -109,24 +115,29 @@ class FoundationFood(BaseModel):
 class FoodData(BaseModel):
     FoundationFoods: List[FoundationFood]
 
+
 # FastAPI App
 app = FastAPI()
+
 
 @app.on_event("startup")
 async def startup():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
 
+
 async def get_db() -> AsyncSession:
     async with SessionLocal() as session:
         yield session
 
+
 # Define the Request Model
 class TextRequest(BaseModel):
-    question: str
+    sentence: str
+
 
 # we need to index the foundationDownload.json data
-with open('foundationDownload.json') as f:
+with open("foundationDownload.json") as f:
     print("data found")
     print(f)
     data = json.load(f)
@@ -138,7 +149,7 @@ documents = []  # list to hold the indexed documents
 #         # print(f"Food Class: {food.get('foodClass')}")
 #         documents.append(Document(content=str(food.get('foodClass')))) # adding the indexed document to documents list
 #         # print(f"Description: {food.get('description')}")
-        
+
 #         # for nutrient in food.get("foodNutrients", []):
 #             # nutrient_info = nutrient.get("nutrient", {})
 #             # print(f"  Nutrient Name: {nutrient_info.get('name')}")
@@ -153,19 +164,21 @@ documents = []  # list to hold the indexed documents
 #             # print(f"      Source ID: {food_source.get('id')}")
 #             # print(f"      Source Description: {food_source.get('description')}")
 #             # # add it to documents
-for foundation_food in FoodData(**data).FoundationFoods:
-    # Convert FoundationFood object to string content for indexing
-    food_class_content = foundation_food.foodClass
-    food_description_content = foundation_food.description
-    nutrients_content = ", ".join(
-        f"{nutrient.nutrient.name} ({nutrient.nutrient.unitName}): {nutrient.amount}" for nutrient in foundation_food.foodNutrients if nutrient.amount is not None
-    )
-    
-    # Create a content string that includes the foodClass, description, and nutrient details
-    content = f"Class: {food_class_content}, Description: {food_description_content}, Nutrients: {nutrients_content}"
-    
-    # Append as Document to documents list
-    documents.append(Document(content=content))
+# for foundation_food in FoodData(**data).FoundationFoods:
+#     # Convert FoundationFood object to string content for indexing
+#     food_class_content = foundation_food.foodClass
+#     food_description_content = foundation_food.description
+#     nutrients_content = ", ".join(
+#         f"{nutrient.nutrient.name} ({nutrient.nutrient.unitName}): {nutrient.amount}"
+#         for nutrient in foundation_food.foodNutrients
+#         if nutrient.amount is not None
+#     )
+
+#     # Create a content string that includes the foodClass, description, and nutrient details
+#     content = f"Class: {food_class_content}, Description: {food_description_content}, Nutrients: {nutrients_content}"
+
+#     # Append as Document to documents list
+#     documents.append(Document(content=content))
 
 # Call the function to print the data
 # print_food_data(data)
@@ -175,13 +188,13 @@ for foundation_food in FoodData(**data).FoundationFoods:
 #         continue
 #     flat_dict = {} # create a flat dictionary for each record
 #     for key, value in record.items():
-#         # process 'foodClass' and 'description' directly without prefixing them with 'food_' 
+#         # process 'foodClass' and 'description' directly without prefixing them with 'food_'
 #         if key in ('foodClass', 'description'):
-#             flat_dict[key] = str(value)  
+#             flat_dict[key] = str(value)
 #             continue
-#         elif isinstance(value, dict): # if value is a dictionary then add its content to our flat dictionary  
+#         elif isinstance(value, dict): # if value is a dictionary then add its content to our flat dictionary
 #             for subkey, subvalue in value.items():
-#                 # adding prefix 'food_' for clarity 
+#                 # adding prefix 'food_' for clarity
 #                 flat_dict['food_'+subkey] = str(subvalue)
 #         elif isinstance(value, list): # for handling the nested foodNutrients
 #             for j, nutrient in enumerate(value): # iterate over each foodNutrient and create a new key-value pair for it
@@ -191,24 +204,27 @@ for foundation_food in FoodData(**data).FoundationFoods:
 #         else:
 #             flat_dict[key] = value  # add other key-values to our flat dictionary without converting it into a string
 #     document = Document(content=str(flat_dict), id=i) # create a document with the flat dictionary and assign index as its id
-#     documents.append(document) 
+#     documents.append(document)
 
 print(len(documents))
+
+
 # Define an endpoint for inference
-@app.post("/predict/")
-async def predict(request: TextRequest):
-    docs = [
-        Document(content="Python is a popular programming language"),
-        Document(content="python ist eine beliebte Programmiersprache"),
-    ]
+# @app.post("/predict/")
+# async def predict(request: TextRequest):
+#     docs = [
+#         Document(content="Python is a popular programming language"),
+#         Document(content="python ist eine beliebte Programmiersprache"),
+#     ]
 
-    reader = ExtractiveReader(model="deepset/tinyroberta-squad2")
-    reader.warm_up()
+#     reader = ExtractiveReader(model="deepset/tinyroberta-squad2")
+#     reader.warm_up()
 
-    # question = "What is a popular programming language?"
-    result = reader.run(query=request.question, documents=documents)
-    
-    return {"result": result}
+#     # question = "What is a popular programming language?"
+#     result = reader.run(query=request.question, documents=documents)
+
+#     return {"result": result}
+
 
 @app.post("/food/", response_model=FoodEntryResponse)
 async def create_food_entry(entry: FoodEntry, db: AsyncSession = Depends(get_db)):
@@ -218,10 +234,12 @@ async def create_food_entry(entry: FoodEntry, db: AsyncSession = Depends(get_db)
     await db.refresh(food_entry)
     return food_entry
 
+
 @app.get("/food/", response_model=List[FoodEntryResponse])
 async def list_food_entries(db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(FoodEntryDB))
     return result.scalars().all()
+
 
 @app.delete("/food/{entry_id}", status_code=204)
 async def delete_food_entry(entry_id: int, db: AsyncSession = Depends(get_db)):
@@ -230,20 +248,33 @@ async def delete_food_entry(entry_id: int, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Entry not found")
     await db.commit()
 
+
 class UserSignIn(BaseModel):
     email: str
     password: str
+
 
 # signin
 @app.post("/signin/")
 async def signin(user: UserSignIn, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(UserDB).where(UserDB.email == user.email))
     # verify the password hash
-    if result.scalars().first().password_hash != hashlib.sha256(user.password.encode()).hexdigest():
+    if (
+        result.scalars().first().password_hash
+        != hashlib.sha256(user.password.encode()).hexdigest()
+    ):
         raise HTTPException(status_code=401, detail="Invalid username or password")
     # issue a token
-    token = jwt.encode({"email": user.email}, "secret", algorithm="HS256")
+    token = jwt.encode(
+        {
+            "email": user.email,
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=1),
+        },
+        "secret",
+        algorithm="HS256",
+    )
     return {"token": token}
+
 
 @app.post("/signup/")
 async def signup(user: User, db: AsyncSession = Depends(get_db)):
@@ -257,3 +288,27 @@ async def signup(user: User, db: AsyncSession = Depends(get_db)):
     return user_db
 
 
+# check if user token is valid
+@app.get("/check-user-token-valid/{token}")
+async def check_user_token_valid(token: str):
+    try:
+        decoded_token = jwt.decode(token, "secret", algorithms=["HS256"])
+        # check if token is expired
+        if datetime.datetime.fromtimestamp(decoded_token["exp"]) < datetime.datetime.utcnow():
+            raise HTTPException(status_code=401, detail="Token has expired")
+
+        return {
+            "valid": True,
+            "email": jwt.decode(token, "secret", algorithms=["HS256"])["email"],
+        }
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token has expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Token validation failed")
+
+@app.post("/analyze-food-sentence/")
+async def analyze_food_sentence(request: TextRequest):
+    analyze_food_query(request.sentence)
+    return {"result": "success"}

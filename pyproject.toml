@@ -1,0 +1,21 @@
+[tool.black]
+line-length = 88  # Black default, but adjust if needed for your project's style
+target-version = ['py39']  # Assuming Python 3.9, update if you're using a different version
+skip-string-normalization = false  # Keep string normalization (default)
+skip-magic-trailing-comma = false  # Adds trailing commas to avoid changes on edits
+include = '\.py$'  # Include only .py files
+exclude = '''
+# Exclude specific directories and files
+/(\..*|venv|node_modules|\.mypy_cache|\.pytest_cache|\.tox|__pycache__|build|dist)/
+'''
+
+[tool.isort]
+profile = "black"  # Ensures import sorting compatibility with Black
+line_length = 88
+
+[tool.pylint]
+disable = ["C0114", "C0115", "C0116"]  # Disable certain Pylint rules if they're too noisy
+
+[tool.mypy]
+python_version = "3.9"  # Update this if you're using a different version
+ignore_missing_imports = true
