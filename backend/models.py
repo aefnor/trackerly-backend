@@ -1,28 +1,62 @@
-import hashlib
-from pydantic import validator
-from sqlalchemy import Column, Date, Float, String, Integer, Text
-from sqlalchemy.orm import declarative_base, relationship
-from sqlalchemy import ForeignKey
+from sqlalchemy import Column, Integer, String, Float, JSON, Boolean, DateTime, ForeignKey
+from sqlalchemy.orm import declarative_base, declared_attr
+from sqlalchemy.sql import func
 
 Base = declarative_base()
 
-
-class FoodEntryDB(Base):
-    __tablename__ = "food_entries"
-
+class StandardColMixin(object):
+    @declared_attr
+    def __tablename__(cls):
+        return cls.__name__.lower()
+    
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    updated_by = Column(String, nullable=True)
+    created_by = Column(String, nullable=True)
+    updated_time = Column(DateTime, nullable=True, default=func.now())
+    created_time = Column(DateTime, nullable=True, default=func.now())
+
+class FoodEntry(StandardColMixin, Base):
+
     food_name = Column(String, nullable=False)
-    category = Column(String, nullable=False)
-    date = Column(String, nullable=False)
-    quantity = Column(String, nullable=False)
-    calories = Column(String, nullable=True)
-    notes = Column(Text, nullable=True)
+    category = Column(String, nullable=True)
+    date = Column(DateTime, default=func.now(), nullable=False)
+    portion_size = Column(JSON, nullable=True)
+    calories = Column(Float, nullable=True)
+    macronutrients = Column(JSON, nullable=True)
+    micronutrients = Column(JSON, nullable=True)
+    fiber_content = Column(String, nullable=True)
+    sugar = Column(JSON, nullable=True)
+    cholesterol = Column(String, nullable=True)
+    sodium = Column(String, nullable=True)
+    fats = Column(JSON, nullable=True)
+    common_allergens = Column(JSON, nullable=True)
+    dietary_tags = Column(JSON, nullable=True)
+    custom_recipes = Column(JSON, nullable=True)
+    favorite_foods = Column(JSON, nullable=True)
+    user_notes = Column(String, nullable=True)
+    barcode_scanner = Column(String, nullable=True)
+    photo_upload = Column(String, nullable=True)
+    ingredient_breakdown = Column(JSON, nullable=True)
+    historical_data = Column(JSON, nullable=True)
+    ai_recommendations = Column(JSON, nullable=True)
+    wearables_integration = Column(JSON, nullable=True)
+    grocery_list = Column(JSON, nullable=True)
+    hydration_tracking = Column(JSON, nullable=True)
+    energy_level_correlation = Column(JSON, nullable=True)
+    symptoms_tracking = Column(JSON, nullable=True)
+    sharing_options = Column(JSON, nullable=True)
+    progress_sharing = Column(JSON, nullable=True)
+    streaks_and_achievements = Column(JSON, nullable=True)
+    daily_goals = Column(JSON, nullable=True)
+    graphs_and_charts = Column(JSON, nullable=True)
+    weekly_summaries = Column(JSON, nullable=True)
+    diet_comparison = Column(JSON, nullable=True)
+    multi_language_support = Column(JSON, nullable=True)
+    offline_mode = Column(Boolean, nullable=True)
 
 
-class UserDB(Base):
-    __tablename__ = "users"
+class User(StandardColMixin, Base):
 
-    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     username = Column(String, nullable=False)
     password_hash = Column(String, nullable=False)
     email = Column(String, nullable=False)
