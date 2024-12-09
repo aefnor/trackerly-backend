@@ -26,8 +26,8 @@ SessionLocal = async_sessionmaker(bind=engine, expire_on_commit=False)
 Base = declarative_base()
 # Load model directly
 
-tokenizer = AutoTokenizer.from_pretrained("deepset/tinyroberta-squad2")
-model = AutoModelForQuestionAnswering.from_pretrained("deepset/tinyroberta-squad2")
+# tokenizer = AutoTokenizer.from_pretrained("deepset/tinyroberta-squad2")
+# model = AutoModelForQuestionAnswering.from_pretrained("deepset/tinyroberta-squad2")
 
 
 # FoodEntry Model (Database Table)
@@ -293,8 +293,12 @@ async def signup(user: User, db: AsyncSession = Depends(get_db)):
 async def check_user_token_valid(token: str):
     try:
         decoded_token = jwt.decode(token, "secret", algorithms=["HS256"])
+        print(decoded_token)
         # check if token is expired
-        if datetime.datetime.fromtimestamp(decoded_token["exp"]) < datetime.datetime.utcnow():
+        if (
+            datetime.datetime.utcfromtimestamp(decoded_token["exp"])
+            < datetime.datetime.utcnow()
+        ):
             raise HTTPException(status_code=401, detail="Token has expired")
 
         return {
@@ -302,13 +306,127 @@ async def check_user_token_valid(token: str):
             "email": jwt.decode(token, "secret", algorithms=["HS256"])["email"],
         }
     except jwt.ExpiredSignatureError:
+        print("Token has expired")
         raise HTTPException(status_code=401, detail="Token has expired")
     except jwt.InvalidTokenError:
+        print("Invalid token")
         raise HTTPException(status_code=401, detail="Invalid token")
     except Exception as e:
+        print("Token validation failed")
         raise HTTPException(status_code=401, detail="Token validation failed")
+
 
 @app.post("/analyze-food-sentence/")
 async def analyze_food_sentence(request: TextRequest):
-    analyze_food_query(request.sentence)
-    return {"result": "success"}
+    food_name_list_response = analyze_food_query(
+        request.sentence
+    )  # ['turkey sandwich']
+    if True:
+        return {
+            "result": "success",
+            "food_name_list_response": {
+                "food_name": "Grilled Chicken Salad",
+                "portion_size": {"amount": 250, "unit": "grams"},
+                "calories_per_portion": 350,
+                "macronutrients": {"carbohydrates": 20, "proteins": 30, "fats": 10},
+                "micronutrients": {
+                    "vitamin_a": "500 IU",
+                    "vitamin_c": "20 mg",
+                    "iron": "2 mg",
+                },
+                "fiber_content": "5 g",
+                "sugar": {"added": "2 g", "natural": "5 g"},
+                "cholesterol": "70 mg",
+                "sodium": "400 mg",
+                "fats": {"saturated_fats": "2 g", "trans_fats": "0 g"},
+                "common_allergens": ["dairy", "nuts"],
+                "dietary_tags": ["low-carb", "keto", "gluten-free"],
+                "custom_recipes": [
+                    {
+                        "name": "Chicken Caesar Salad",
+                        "calories": 450,
+                        "macronutrients": {
+                            "carbohydrates": 15,
+                            "proteins": 35,
+                            "fats": 20,
+                        },
+                    }
+                ],
+                "favorite_foods": ["Grilled Chicken", "Quinoa Bowl", "Smoothies"],
+                "user_notes": "Had this for lunch after workout",
+                "meal_type": "lunch",
+                "time_and_date": "2024-12-08T12:30:00Z",
+                "location": "Home",
+                "barcode_scanner": "0123456789012",
+                "photo_upload": "base64_encoded_image_string",
+                "ingredient_breakdown": [
+                    {"ingredient": "Chicken Breast", "quantity": "150g"},
+                    {"ingredient": "Lettuce", "quantity": "50g"},
+                    {"ingredient": "Dressing", "quantity": "50g"},
+                ],
+                "historical_data": [
+                    {"date": "2024-12-01", "calories": 2000},
+                    {"date": "2024-12-02", "calories": 2200},
+                ],
+                "ai_recommendations": [
+                    "Add avocado for healthy fats",
+                    "Try quinoa for variety",
+                ],
+                "wearables_integration": {
+                    "fitness_tracker": "Fitbit",
+                    "heart_rate": "85 bpm",
+                },
+                "grocery_list": ["Chicken Breast", "Lettuce", "Dressing"],
+                "api_support": ["USDA Food Database", "MyFitnessPal API"],
+                "hydration_tracking": {"water_intake": "2.5 liters"},
+                "energy_level_correlation": {
+                    "energy_level": "High",
+                    "time_after_meal": "2 hours",
+                },
+                "symptoms_tracking": {
+                    "GI_issues": "None",
+                    "mood_changes": "Feeling energetic",
+                },
+                "sharing_options": {"recipes": True, "logs": False},
+                "progress_sharing": ["Facebook", "Instagram"],
+                "streaks_and_achievements": {
+                    "streak_days": 7,
+                    "achievements": ["Logged meals for 7 days in a row"],
+                },
+                "daily_goals": {
+                    "calories": 2000,
+                    "macronutrients": {"carbs": 250, "proteins": 150, "fats": 70},
+                },
+                "graphs_and_charts": {
+                    "trends": {
+                        "calories": [2000, 2200, 2100],
+                        "macronutrients": [
+                            {
+                                "day": "2024-12-01",
+                                "carbs": 250,
+                                "proteins": 150,
+                                "fats": 70,
+                            },
+                            {
+                                "day": "2024-12-02",
+                                "carbs": 230,
+                                "proteins": 140,
+                                "fats": 60,
+                            },
+                        ],
+                    }
+                },
+                "weekly_summaries": {
+                    "total_calories": 14000,
+                    "average_daily_calories": 2000,
+                    "habit_analysis": "Consistent protein intake",
+                },
+                "diet_comparison": {
+                    "recommended_calories": 2000,
+                    "current_average": 2100,
+                },
+                "multi_language_support": ["English", "Spanish", "French"],
+                "offline_mode": True,
+            },
+        }
+    return {"result": "success", "food_name_list_response": food_name_list_response}

@@ -2,10 +2,12 @@ from typing import List
 from pydantic import BaseModel, validator
 import pandas as pd
 
+
 # Acquisition Samples model
 class AcquisitionSamples(BaseModel):
     fdc_id_of_sample_food: int
     fdc_id_of_acquisition_food: int
+
 
 # Agricultural Samples Model
 class AgriculturalSamples(BaseModel):
@@ -14,6 +16,7 @@ class AgriculturalSamples(BaseModel):
     market_class: str
     treatment: str
     state: str
+
 
 # Branded Foods model
 class BrandedFoods(BaseModel):
@@ -37,10 +40,12 @@ class BrandedFoods(BaseModel):
     trade_channel: str
     short_description: str
 
+
 # Fndds Derivation model
 class FnddsDerivation(BaseModel):
     derivation_code: str
     derivation_description: str
+
 
 # Foods Model
 class Foods(BaseModel):
@@ -49,6 +54,7 @@ class Foods(BaseModel):
     description: str
     food_category_id: str
     publication_date: str
+
 
 # Food Attribute Model
 class FoodAttribute(BaseModel):
@@ -59,11 +65,13 @@ class FoodAttribute(BaseModel):
     name: str
     value: str
 
+
 # Food Attribute Type Model
 class FoodAttributeType(BaseModel):
     id: int
     name: str
     description: str
+
 
 # Food Calorie Conversion Factor model
 class FoodCalorieConversionFactor(BaseModel):
@@ -72,11 +80,13 @@ class FoodCalorieConversionFactor(BaseModel):
     fat_value: float
     carbohydrate_value: float
 
+
 # Food Category Model
 class FoodCategory(BaseModel):
     id: int
     code: str
     description: str
+
 
 # Food Component Model
 class FoodComponent(BaseModel):
@@ -88,6 +98,7 @@ class FoodComponent(BaseModel):
     gram_weight: float
     data_points: int
     min_year_acquired: float
+
 
 # Food Nutrient Model
 class FoodNutrient(BaseModel):
@@ -105,10 +116,12 @@ class FoodNutrient(BaseModel):
     min_year_acquired: float
     percent_daily_value: float
 
-# Food Nutrient Conversion Factor Model 
+
+# Food Nutrient Conversion Factor Model
 class FoodNutrientConversionFactor(BaseModel):
     id: int
     fdc_id: int
+
 
 # Lab Method Model
 class LabMethod(BaseModel):
@@ -116,15 +129,18 @@ class LabMethod(BaseModel):
     description: str
     technique: str
 
+
 # Lab Method Code Model
 class LabMethodCode(BaseModel):
     lab_method_id: int
     code: str
 
+
 # Lab Method Nutrient Model
 class LabMethodNutrient(BaseModel):
     lab_method_id: int
     nutrient_id: int
+
 
 # Market Acquisition Model
 class MarketAcquisition(BaseModel):
@@ -142,10 +158,12 @@ class MarketAcquisition(BaseModel):
     store_state: str
     upc_code: str
 
+
 # Measure Unit Model
 class MeasureUnit(BaseModel):
     id: int
     name: str
+
 
 # Microbe Model
 class Microbe(BaseModel):
@@ -157,6 +175,7 @@ class Microbe(BaseModel):
     max_value: float
     uom: str
 
+
 # Nutrient Model
 class Nutrient(BaseModel):
     id: int
@@ -165,6 +184,7 @@ class Nutrient(BaseModel):
     nutrient_nbr: float
     rank: float
 
+
 # Retention Factor model
 class RetentionFactor(BaseModel):
     n.gid: int
@@ -172,19 +192,23 @@ class RetentionFactor(BaseModel):
     n.foodGroupId: int
     n.description: str
 
+
 # Sample Food Model
 class SampleFood(BaseModel):
     fdc_id: int
+
 
 # SR Legacy Food Model
 class SRLegacyFood(BaseModel):
     fdc_id: int
     NDB_number: int
 
+
 # Sub-Sample Food Model
 class SubSampleFood(BaseModel):
     fdc_id: int
     fdc_id_of_sample_food: int
+
 
 # Sub Sample Result model
 class SubSampleResult(BaseModel):
@@ -193,6 +217,7 @@ class SubSampleResult(BaseModel):
     lab_method_id: int
     nutrient_name: str
 
+
 # Survey Fndds Food Model
 class SurveyFnddsFood(BaseModel):
     fdc_id: int
@@ -200,6 +225,7 @@ class SurveyFnddsFood(BaseModel):
     wweia_category_code: int
     start_date: str
     end_date: str
+
 
 # WWEIA Food Category model
 class WWEIAFoodCategory(BaseModel):

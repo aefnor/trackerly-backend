@@ -6,6 +6,7 @@ from sqlalchemy import ForeignKey
 
 Base = declarative_base()
 
+
 class FoodEntryDB(Base):
     __tablename__ = "food_entries"
 
@@ -17,6 +18,7 @@ class FoodEntryDB(Base):
     calories = Column(String, nullable=True)
     notes = Column(Text, nullable=True)
 
+
 class UserDB(Base):
     __tablename__ = "users"
 
@@ -27,7 +29,6 @@ class UserDB(Base):
     first_name = Column(String, nullable=False)
     last_name = Column(String, nullable=False)
 
-    
 
 # # Food Model
 # class Food(Base):
