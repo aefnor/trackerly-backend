@@ -36,6 +36,7 @@ async def get_db() -> AsyncSession:
     async with SessionLocal() as session:
         yield session
 
+
 # signin
 @app.post("/signin/")
 async def signin(user: schema.UserSignIn, db: AsyncSession = Depends(get_db)):
@@ -68,6 +69,26 @@ async def signup(user: schema.User, db: AsyncSession = Depends(get_db)):
     await db.commit()
     await db.refresh(user_db)
     return user_db
+
+
+@app.post("/forgot-password/")
+async def forgot_password(
+    user: schema.UserForgotPassword, db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(select(User).where(User.email == user.email))
+    user_db = result.scalars().first()
+    if not user_db:
+        raise HTTPException(status_code=404, detail="User not found")
+    # issue a token
+    token = jwt.encode(
+        {
+            "email": user.email,
+            "exp": datetime.datetime.utcnow() + datetime.timedelta(hours=24),
+        },
+        "secret",
+        algorithm="HS256",
+    )
+    return {"token": token}
 
 
 # check if user token is valid

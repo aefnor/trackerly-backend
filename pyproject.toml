@@ -19,3 +19,8 @@ disable = ["C0114", "C0115", "C0116"]  # Disable certain Pylint rules if they're
 [tool.mypy]
 python_version = "3.9"  # Update this if you're using a different version
 ignore_missing_imports = true
+
+# projec table
+[project]
+name = "trackerly-backend"
+version = "0.1.0"

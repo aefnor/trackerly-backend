@@ -4,9 +4,11 @@ from pydantic import BaseModel, validator
 from datetime import datetime
 from typing import Optional, Dict, Any
 
+
 class UserSignIn(BaseModel):
     email: str
     password: str
+
 
 class User(BaseModel):
     username: str
@@ -29,6 +31,7 @@ class User(BaseModel):
 
     class Config:
         orm_mode = True
+
 
 class FoodEntryBase(BaseModel):
     food_name: str
@@ -60,5 +63,10 @@ class FoodEntryBase(BaseModel):
     class Config:
         orm_mode = True
 
+
 class TextRequest(BaseModel):
     sentence: str
+
+
+class UserForgotPassword(BaseModel):
+    email: str
