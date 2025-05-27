@@ -1,19 +1,30 @@
-from sqlalchemy import Column, Integer, String, Float, JSON, Boolean, DateTime, ForeignKey
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Float,
+    JSON,
+    Boolean,
+    DateTime,
+    ForeignKey,
+)
 from sqlalchemy.orm import declarative_base, declared_attr
 from sqlalchemy.sql import func
 
 Base = declarative_base()
 
+
 class StandardColMixin(object):
     @declared_attr
     def __tablename__(cls):
         return cls.__name__.lower()
-    
+
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     updated_by = Column(String, nullable=True)
     created_by = Column(String, nullable=True)
     updated_time = Column(DateTime, nullable=True, default=func.now())
     created_time = Column(DateTime, nullable=True, default=func.now())
+
 
 class FoodEntry(StandardColMixin, Base):
 

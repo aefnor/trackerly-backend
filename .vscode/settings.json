@@ -1,0 +1,20 @@
+{
+  "python.analysis.extraPaths": [
+    "c:\\Dev\\trackerly-backend\\Lib\\site-packages",
+    "c:\\Dev\\trackerly-backend\\backend\\stubs",
+    "C:\\Dev\\trackerly-backend\\.venv\\Lib\\site-packages"
+  ],
+  "python.terminal.activateEnvInCurrentTerminal": true,
+  "python.defaultInterpreterPath": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+  "editor.semanticTokenColorCustomizations": {
+    "rules": {
+      "*.function": "#C586F1",
+      "*.parameter": "#FFD580",
+      "*.variable": "#EAEAEA",
+      "*.class": "#FF8FB1",
+      "*.comment": { "foreground": "#7F848E", "fontStyle": "italic" },
+      "*.keyword": "#FF6F61"
+    }
+  },
+  "workbench.colorTheme": "Default Dark+"
+}

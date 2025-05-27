@@ -2,12 +2,19 @@ import hashlib
 from backend import schema
 from fastapi import FastAPI, HTTPException, Depends
 import jwt
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
-from sqlalchemy import select
+from sqlalchemy.ext.asyncio.session import (
+    AsyncSession,
+    async_sessionmaker,
+)
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.sql import select
 from sqlalchemy.orm import declarative_base
 from backend.models import User
 import datetime
 from backend.food import analyze_food_query
+from typing import AsyncGenerator
+from fastapi.middleware.cors import CORSMiddleware
+
 
 # Use the DATABASE_URL from the environment (injected via Docker Compose)
 import os
@@ -25,6 +32,15 @@ Base = declarative_base()
 # FastAPI App
 app = FastAPI()
 
+# cors
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allow all origins for development; adjust in production
+    allow_credentials=True,
+    allow_methods=["*"],  # Allow all methods
+    allow_headers=["*"],  # Allow all headers
+)
+
 
 @app.on_event("startup")
 async def startup():
@@ -32,7 +48,7 @@ async def startup():
         await conn.run_sync(Base.metadata.create_all)
 
 
-async def get_db() -> AsyncSession:
+async def get_db() -> AsyncGenerator[AsyncSession, None]:
     async with SessionLocal() as session:
         yield session
 
@@ -41,13 +57,15 @@ async def get_db() -> AsyncSession:
 @app.post("/signin/")
 async def signin(user: schema.UserSignIn, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.email == user.email))
-    # verify the password hash
-    if (
-        result.scalars().first().password_hash
-        != hashlib.sha256(user.password.encode()).hexdigest()
-    ):
+    db_user = result.scalars().first()
+
+    if not db_user:
         raise HTTPException(status_code=401, detail="Invalid username or password")
-    # issue a token
+
+    hashed_password = hashlib.sha256(user.password.encode()).hexdigest()
+    if getattr(db_user, "password_hash") != hashed_password:
+        raise HTTPException(status_code=401, detail="Invalid username or password")
+
     token = jwt.encode(
         {
             "email": user.email,
@@ -56,6 +74,7 @@ async def signin(user: schema.UserSignIn, db: AsyncSession = Depends(get_db)):
         "secret",
         algorithm="HS256",
     )
+
     return {"token": token}
 
 

@@ -1,0 +1,9 @@
+{
+  "python.languageServer": "Pylance",
+  "python.analysis.typeCheckingMode": "off",
+  "python.analysis.extraPaths": [
+    "c:\\Dev\\trackerly-backend",
+    "c:\\Dev\\trackerly-backend\\Lib\\site-packages"
+  ],
+  "python.linting.enabled": true
+}

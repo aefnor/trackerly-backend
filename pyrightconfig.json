@@ -1,0 +1,17 @@
+{
+  "venvPath": "c:\\Dev\\trackerly-backend",
+  "venv": ".",
+  "pythonPath": "c:\\Dev\\trackerly-backend\\Scripts\\python.exe",
+  "typeCheckingMode": "basic",
+  "reportMissingImports": false,
+  "reportMissingTypeStubs": false,
+  "extraPaths": [
+    "c:\\Dev\\trackerly-backend\\Lib\\site-packages",
+    "c:\\Dev\\trackerly-backend\\Lib\\site-packages\\sqlalchemy",
+    "c:\\Dev\\trackerly-backend\\Lib\\site-packages\\sqlalchemy\\ext",
+    "c:\\Dev\\trackerly-backend",
+    "c:\\Dev\\trackerly-backend\\backend\\stubs"
+  ],
+  "ignore": ["**/node_modules", "**/__pycache__"],
+  "exclude": ["**/node_modules", "**/__pycache__", ".venv", "./alembic"]
+}
