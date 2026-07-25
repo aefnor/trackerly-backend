@@ -33,12 +33,13 @@ def _get_database_url() -> str:
     if database_url.startswith("postgresql://"):
         database_url = database_url.replace("postgresql://", "postgresql+asyncpg://", 1)
 
-    if "sslmode=" in database_url:
-        parts = urlsplit(database_url)
+    parts = urlsplit(database_url)
+    if parts.query:
         query = dict(parse_qsl(parts.query, keep_blank_values=True))
+        query.pop("channel_binding", None)
         sslmode = query.pop("sslmode", None)
-        if sslmode:
-            query["ssl"] = sslmode
+        if sslmode and sslmode != "disable":
+            query["ssl"] = "true"
         database_url = urlunsplit(
             (parts.scheme, parts.netloc, parts.path, urlencode(query), parts.fragment)
         )
