@@ -33,6 +33,20 @@ class User(BaseModel):
         orm_mode = True
 
 
+class UserRead(BaseModel):
+    id: int
+    username: str
+    email: str
+    first_name: str
+    last_name: str
+    created_by: Optional[str] = None
+    created_time: Optional[datetime] = None
+    updated_by: Optional[str] = None
+    updated_time: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class FoodEntryBase(BaseModel):
     food_name: str
     category: Optional[str] = None

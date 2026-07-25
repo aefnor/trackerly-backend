@@ -131,7 +131,7 @@ async def signin(user: schema.UserSignIn, db: AsyncSession = Depends(get_db)):
     return {"token": token}
 
 
-@app.post("/signup/")
+@app.post("/signup/", response_model=schema.UserRead)
 async def signup(user: schema.User, db: AsyncSession = Depends(get_db)):
     user_data = user.dict(exclude={"password"})
     user_data["password_hash"] = hashlib.sha256(user.password.encode()).hexdigest()
