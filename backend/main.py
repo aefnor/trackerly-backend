@@ -37,9 +37,6 @@ def _get_database_url() -> str:
     if parts.query:
         query = dict(parse_qsl(parts.query, keep_blank_values=True))
         query.pop("channel_binding", None)
-        sslmode = query.pop("sslmode", None)
-        if sslmode and sslmode != "disable":
-            query["ssl"] = "true"
         database_url = urlunsplit(
             (parts.scheme, parts.netloc, parts.path, urlencode(query), parts.fragment)
         )
