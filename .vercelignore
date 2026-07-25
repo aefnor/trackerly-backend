@@ -1,0 +1,8 @@
+.venv/
+.venv310/
+.vercel/
+__pycache__/
+.ruff_cache/
+data/
+foundationDownload.json
+backend/foundationDownload.json

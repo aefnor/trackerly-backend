@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from sqlalchemy import (
     Column,
     Integer,
@@ -474,3 +476,173 @@ class User(StandardColMixin, Base):
 # # Complete any additional relationships as necessary for other models.
 
 # # Note: For classes like MeasureUnit, RetentionFactor, and others where relationships were not specified, add relationships based on the actual database schema and requirements.
+
+# models.py
+from typing import Optional
+from sqlalchemy import (
+    BigInteger,
+    Boolean,
+    Column,
+    DateTime,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+)
+from sqlalchemy.dialects.postgresql import JSONB, ARRAY
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+
+class Product(Base):
+    __tablename__ = "products"
+
+    # Identifiers
+    code: Mapped[str] = mapped_column(String, primary_key=True)  # "0037578800800"
+    id: Mapped[Optional[String]] = mapped_column(String, nullable=True)
+
+    # Core metadata
+    product_name: Mapped[Optional[str]] = mapped_column(Text)
+    brands: Mapped[Optional[str]] = mapped_column(Text)
+    quantity: Mapped[Optional[str]] = mapped_column(Text)
+    countries: Mapped[Optional[str]] = mapped_column(Text)
+    lang: Mapped[Optional[str]] = mapped_column(String(8))
+    lc: Mapped[Optional[str]] = mapped_column(String(8))
+    created_t: Mapped[Optional[int]] = mapped_column(BigInteger)
+    last_modified_t: Mapped[Optional[int]] = mapped_column(BigInteger)
+    last_updated_t: Mapped[Optional[int]] = mapped_column(BigInteger)
+    rev: Mapped[Optional[int]] = mapped_column(Integer)
+    complete: Mapped[Optional[int]] = mapped_column(Integer)
+    completeness: Mapped[Optional[Float]] = mapped_column(Float)
+
+    # Nutrition / scoring (JSONB blobs)
+    nutriments: Mapped[Optional[dict]] = mapped_column(JSONB)
+    nutrient_levels: Mapped[Optional[dict]] = mapped_column(JSONB)
+    nutriscore: Mapped[Optional[dict]] = mapped_column(JSONB)
+    nutriscore_grade: Mapped[Optional[str]] = mapped_column(String(4))
+    nutriscore_score: Mapped[Optional[int]] = mapped_column(Integer)
+
+    ecoscore_data: Mapped[Optional[dict]] = mapped_column(JSONB)
+    ecoscore_grade: Mapped[Optional[str]] = mapped_column(String(4))
+    ecoscore_score: Mapped[Optional[int]] = mapped_column(Integer)
+
+    # Ingredients
+    ingredients_text: Mapped[Optional[Text]] = mapped_column(Text)
+    ingredients_text_en: Mapped[Optional[Text]] = mapped_column(Text)
+    allergens: Mapped[Optional[str]] = mapped_column(Text)
+    traces: Mapped[Optional[str]] = mapped_column(Text)
+
+    # Images (flat URLs)
+    image_url: Mapped[Optional[str]] = mapped_column(Text)
+    image_small_url: Mapped[Optional[str]] = mapped_column(Text)
+    image_thumb_url: Mapped[Optional[str]] = mapped_column(Text)
+    image_front_url: Mapped[Optional[str]] = mapped_column(Text)
+    image_ingredients_url: Mapped[Optional[str]] = mapped_column(Text)
+    image_nutrition_url: Mapped[Optional[str]] = mapped_column(Text)
+
+    # Big flexible blobs
+    selected_images: Mapped[Optional[dict]] = mapped_column(JSONB)
+    images_raw: Mapped[Optional[dict]] = mapped_column(JSONB)  # entire "images" map
+    categories_properties: Mapped[Optional[dict]] = mapped_column(JSONB)
+    category_properties: Mapped[Optional[dict]] = mapped_column(JSONB)
+    ecoscore_other: Mapped[Optional[dict]] = mapped_column(JSONB)
+
+    # Tags (ARRAY or JSONB)
+    categories_tags: Mapped[Optional[list[str]]] = mapped_column(ARRAY(Text))
+    countries_tags: Mapped[Optional[list[str]]] = mapped_column(ARRAY(Text))
+    brands_tags: Mapped[Optional[list[str]]] = mapped_column(ARRAY(Text))
+    editors_tags: Mapped[Optional[list[str]]] = mapped_column(ARRAY(Text))
+    data_sources_tags: Mapped[Optional[list[str]]] = mapped_column(ARRAY(Text))
+    misc_tags: Mapped[Optional[list[str]]] = mapped_column(ARRAY(Text))
+    popularity_tags: Mapped[Optional[list[str]]] = mapped_column(ARRAY(Text))
+    states_tags: Mapped[Optional[list[str]]] = mapped_column(ARRAY(Text))
+    packaging_tags: Mapped[Optional[list[str]]] = mapped_column(ARRAY(Text))
+    packaging_materials_tags: Mapped[Optional[list[str]]] = mapped_column(ARRAY(Text))
+    packaging_shapes_tags: Mapped[Optional[list[str]]] = mapped_column(ARRAY(Text))
+    allergens_tags: Mapped[Optional[list[str]]] = mapped_column(ARRAY(Text))
+    traces_tags: Mapped[Optional[list[str]]] = mapped_column(ARRAY(Text))
+
+    # Everything else (future-proof)
+    extra_blob: Mapped[dict] = mapped_column(JSONB, default=dict)
+
+    # Relationships
+    ingredients: Mapped[list[ProductIngredient]] = relationship(
+        back_populates="product", cascade="all, delete-orphan"
+    )
+    packagings: Mapped[list[ProductPackaging]] = relationship(
+        back_populates="product", cascade="all, delete-orphan"
+    )
+    image_entries: Mapped[list[ProductImage]] = relationship(
+        back_populates="product", cascade="all, delete-orphan"
+    )
+
+
+class ProductIngredient(Base):
+    __tablename__ = "product_ingredients"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    product_code: Mapped[str] = mapped_column(
+        ForeignKey("products.code", ondelete="CASCADE"), index=True
+    )
+
+    # Core fields
+    ingredient_id: Mapped[Optional[str]] = mapped_column(Text)
+    text: Mapped[Optional[str]] = mapped_column(Text)
+    rank: Mapped[Optional[int]] = mapped_column(Integer)
+    percent_estimate: Mapped[Optional[float]] = mapped_column(Float)
+    percent_min: Mapped[Optional[str]] = mapped_column(Text)
+    percent_max: Mapped[Optional[str]] = mapped_column(Text)
+    processing: Mapped[Optional[str]] = mapped_column(Text)
+    vegan: Mapped[Optional[str]] = mapped_column(String(16))
+    vegetarian: Mapped[Optional[str]] = mapped_column(String(16))
+    ciqual_food_code: Mapped[Optional[str]] = mapped_column(String(32))
+    ciqual_proxy_food_code: Mapped[Optional[str]] = mapped_column(String(32))
+    ecobalyse_code: Mapped[Optional[str]] = mapped_column(String(64))
+    from_palm_oil: Mapped[Optional[str]] = mapped_column(String(8))
+    is_in_taxonomy: Mapped[Optional[int]] = mapped_column(Integer)
+
+    extra_blob: Mapped[dict] = mapped_column(JSONB, default=dict)
+
+    product: Mapped[Product] = relationship(back_populates="ingredients")
+
+
+class ProductPackaging(Base):
+    __tablename__ = "product_packagings"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    product_code: Mapped[str] = mapped_column(
+        ForeignKey("products.code", ondelete="CASCADE"), index=True
+    )
+
+    material: Mapped[Optional[str]] = mapped_column(String(64))
+    shape: Mapped[Optional[str]] = mapped_column(String(64))
+    food_contact: Mapped[Optional[int]] = mapped_column(Integer)
+    environmental_score_material_score: Mapped[Optional[float]] = mapped_column(Float)
+    environmental_score_shape_ratio: Mapped[Optional[float]] = mapped_column(Float)
+    non_recyclable_and_non_biodegradable: Mapped[Optional[str]] = mapped_column(
+        String(32)
+    )
+
+    extra_blob: Mapped[dict] = mapped_column(JSONB, default=dict)
+
+    product: Mapped[Product] = relationship(back_populates="packagings")
+
+
+class ProductImage(Base):
+    __tablename__ = "product_images"
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    product_code: Mapped[str] = mapped_column(
+        ForeignKey("products.code", ondelete="CASCADE"), index=True
+    )
+
+    key: Mapped[str] = mapped_column(
+        String(64)
+    )  # e.g., "1", "front_en", "ingredients_en"
+    img_meta: Mapped[dict] = mapped_column(JSONB)  # whole entry (sizes, rev, etc.)
+    uploader: Mapped[Optional[str]] = mapped_column(Text)
+    uploaded_t: Mapped[Optional[int]] = mapped_column(BigInteger)
+
+    __table_args__ = (
+        UniqueConstraint("product_code", "key", name="uq_product_images_product_key"),
+    )
+
+    product: Mapped[Product] = relationship(back_populates="image_entries")

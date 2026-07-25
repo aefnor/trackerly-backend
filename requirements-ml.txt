@@ -1,0 +1,6 @@
+accelerate
+farm-haystack
+torch
+torchaudio
+torchvision
+transformers
