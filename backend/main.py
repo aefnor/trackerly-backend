@@ -86,6 +86,12 @@ async def health():
 
 
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
+    if os.getenv("VERCEL") and not HAS_CONFIGURED_DATABASE:
+        raise HTTPException(
+            status_code=503,
+            detail="Database is not configured for this deployment.",
+        )
+
     async with SessionLocal() as session:
         yield session
 
@@ -117,7 +123,6 @@ async def signin(user: schema.UserSignIn, db: AsyncSession = Depends(get_db)):
 
 @app.post("/signup/")
 async def signup(user: schema.User, db: AsyncSession = Depends(get_db)):
-    print(user)
     user_data = user.dict(exclude={"password"})
     user_data["password_hash"] = hashlib.sha256(user.password.encode()).hexdigest()
     user_db = User(**user_data)
