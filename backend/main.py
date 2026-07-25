@@ -22,10 +22,15 @@ import os
 HAS_CONFIGURED_DATABASE = bool(os.getenv("DATABASE_URL") or os.getenv("POSTGRES_URL"))
 
 
-def _get_database_url() -> str:
+def _get_database_config() -> tuple[str, dict[str, bool]]:
     database_url = os.getenv("DATABASE_URL") or os.getenv("POSTGRES_URL")
     if not database_url:
-        return "postgresql+asyncpg://fooduser:foodpass@localhost:5432/foodtracker"
+        return (
+            "postgresql+asyncpg://fooduser:foodpass@localhost:5432/foodtracker",
+            {},
+        )
+
+    connect_args = {}
 
     if database_url.startswith("postgres://"):
         database_url = database_url.replace("postgres://", "postgresql://", 1)
@@ -37,18 +42,25 @@ def _get_database_url() -> str:
     if parts.query:
         query = dict(parse_qsl(parts.query, keep_blank_values=True))
         query.pop("channel_binding", None)
+        sslmode = query.pop("sslmode", None)
+        if sslmode and sslmode != "disable":
+            connect_args["ssl"] = True
         database_url = urlunsplit(
             (parts.scheme, parts.netloc, parts.path, urlencode(query), parts.fragment)
         )
 
-    return database_url
+    return database_url, connect_args
 
 
-DATABASE_URL = _get_database_url()
+DATABASE_URL, DB_CONNECT_ARGS = _get_database_config()
 JWT_SECRET = os.getenv("JWT_SECRET", "secret")
 
 # SQLAlchemy Setup
-engine = create_async_engine(DATABASE_URL, echo=os.getenv("SQLALCHEMY_ECHO") == "true")
+engine = create_async_engine(
+    DATABASE_URL,
+    connect_args=DB_CONNECT_ARGS,
+    echo=os.getenv("SQLALCHEMY_ECHO") == "true",
+)
 SessionLocal = async_sessionmaker(bind=engine, expire_on_commit=False)
 
 # FastAPI App
